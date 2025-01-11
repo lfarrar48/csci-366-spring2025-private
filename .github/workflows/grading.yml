@@ -1,0 +1,67 @@
+name: Auto Grader
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - for_students
+
+permissions:
+  contents: write
+
+jobs:
+  grading:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout main repository
+        uses: actions/checkout@v3
+
+      - name: autograde
+        run: |
+          set -ex
+          sudo apt install -y jq coreutils
+          mkdir -p grading/repos/pathfinder/ grading/github/
+          pushd grading/repos/pathfinder/
+          ln -s ../../../ repo
+          popd
+          pip install PyGithub
+          python grading/grader.py grade --all-assignments -s pathfinder > grading/github/stdout.txt 2> grading/github/stderr.txt || cat grading/github/stderr.txt
+          python grading/format_results_for_ci.py grading/repos/pathfinder/results.json > grading/status.txt
+          
+          function pad_if_empty() {
+            if [[ -f "$1" && ! -s "$1" ]]; then
+              echo "PADDED BY AUTOGRADER CUZ THIS CAN'T BE EMPTY CUZ GITHUB IS WEIRD (not an actual error)" >> $1
+            fi
+          }
+          pad_if_empty grading/github/stderr.txt
+          pad_if_empty grading/github/stdout.txt
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Autograder Report
+          tag_name: grades
+          body_path: grading/status.txt
+          files: |
+            grading/repos/pathfinder/results.json
+            grading/github/*.txt
+
+#      - name: commit grading results
+#        run: |
+#          git config user.name "CI Bot"
+#          git config user.email "ci-bot-noreply@montana.edu"
+#          git add grading
+#          git commit -m "Add grading results from CI"
+#
+#      - name: push changes
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          git push origin $(git rev-parse --abbrev-ref HEAD)
+
+#      - name: report results elsewhere
+#        run: |
+#          curl -X POST -H "Content-Type: application/json" \
+#          -d @grading/results.json https://example.com/report

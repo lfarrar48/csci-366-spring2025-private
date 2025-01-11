@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>LMSM - Little Man Stack Machine</title>
+    <link rel="stylesheet" href="/assets/css/global.css">
+    <script src='https://unpkg.com/htmx.org@2.0.4'
+            integrity='sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+'
+            crossorigin='anonymous'></script>
+    <script src='https://unpkg.com/hyperscript.org@0.9.13'></script>
+
+
+    <link rel='preconnect' href='https://fonts.googleapis.com'>
+    <link rel='preconnect' href='https://fonts.gstatic.com' crossorigin>
+    <link href='https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap' rel='stylesheet'>
+    <link rel="stylesheet" href="/assets/css/index.css">
+</head>
+<body>
+<main layout='row' style='gap: 20px; width: 100%;'>
+    <section style='flex: 1;'>
+        <h2 style="font-size: 1.1em;"><label for="assembly-code">LMSM Assembly</label></h2>
+        <textarea id="assembly-code" cols="25" rows="25" readonly></textarea>
+    </section>
+    <section layout='column' style='flex: 1;'>
+        <div id='registers' style='border: none'>
+            <h2 style='font-size: 1.1em;'>Registers</h2>
+            {{lmsm.registers}}
+        </div>
+        <div style='border: none;'>
+            <h2 style='font-size: 1.1em;'>IO</h2>
+            <form hx-post='emulator/stdin' hx-trigger='submit' hx-swap='none'
+                  _="on submit call me.reset()">
+                <h3 style="font-size: 0.8em; margin-bottom: 0;"><label for='emulator-input'>stdin</label></h3>
+                <div layout='row'>
+                    <input id='emulator-input' name='value' placeholder='000' required
+                           type='number' min='-999' max='999'>
+                    <div class="spacer"></div>
+                    <input type='submit' value='Send'>
+                </div>
+            </form>
+            <div class="spacer"></div>
+            <div>
+                <h3 style="font-size: 0.8em; margin-bottom: 0;"><label for='emulator-output'>stdout</label></h3>
+                <textarea id="emulator-output" readonly rows='5'></textarea>
+            </div>
+        </div>
+    </section>
+    <section style='flex: 3;'>
+        <div layout="row between cross-center">
+            <div layout="row cross-center">
+                <h2 style='font-size: 1.1em;'>Memory</h2>
+                <div class="spacer"></div>
+                <a style="font-size: 0.8em;" href="/help">Help/Docs</a>
+            </div>
+            <div layout="row">
+                <button hx-post="/emulator/reset" hx-swap="none" style='height: 24px;'>Reset</button>
+                <button hx-post="/emulator/restart" hx-swap="none" style='height: 24px;'>Restart</button>
+                <button hx-post="/emulator/step" hx-swap="none" style='height: 24px;'>Step</button>
+            </div>
+        </div>
+        {{lmsm.memory}}
+    </section>
+    <section style='flex: 3;'>
+        <form id="code-form" layout="column"
+              hx-trigger="submit"
+              hx-post="emulator/code"
+              hx-swap="none"
+        >
+            <div class="spacer"></div>
+            <div layout="row" style="justify-content: space-between;">
+                <h2 style="font-size: 1.1em;"><label layout="row" for="code-input">Code</label></h2>
+            </div>
+<!--           INP-->
+<!--STA X-->
+<!--INP-->
+<!--ADD X-->
+<!--OUT-->
+<!--HLT-->
+<!--X DAT 0-->
+            <textarea id="code-input" name="source" form="code-form" rows="20" cols="40">
+int main() {
+    int value = getn();
+    putn(value);
+    putn(value * 10 + 1);
+    return 42;
+}
+</textarea>
+            <div layout="row" style="justify-content: start;">
+                <div>
+                    <input name="action" type="submit" value="Compile">
+                    <input name="action" type="submit" value="Compile + Load">
+                </div>
+                <div flex></div>
+                <label layout="row" style="font-size: 1em;">
+                    <select form="code-form" name="language">
+                        <option value="sea">SEA</option>
+                        <option value="lma">LM Assembly</option>
+                        <option value="firth">Firth</option>
+                        <option value="zortran">Zortran</option>
+                    </select>
+                </label>
+            </div>
+            <label style="font-size: 1em;">Output:</label>
+            <textarea rows="5" cols="40" id="code-output" readonly></textarea>
+        </form>
+        <button _="on click put '' into the #code-output">Clear Output</button>
+    </section>
+</main>
+</body>
+</html>

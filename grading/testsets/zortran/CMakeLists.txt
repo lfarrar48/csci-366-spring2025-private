@@ -1,0 +1,3 @@
+
+add_executable(zortran_grading_tests test_zortran.cxx)
+target_link_libraries(zortran_grading_tests gtest gtest_main grading_testbase msulib ZORTRAN ASSEMBLER EMULATOR)

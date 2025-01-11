@@ -1,0 +1,26 @@
+# intellij files
+.idea
+*.iml
+
+# artifacts
+**/cmake-build-debug/
+target
+CMakeLists.txt.user
+**/CMakeCache.txt
+**/CMakeFiles
+CMakeScripts
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+build/
+build-grading/
+
+# grading
+grading/scripts/
+grading/repos/
+grading/github/
+grading/students.csv
+grading/grades.csv
+grading/status.txt

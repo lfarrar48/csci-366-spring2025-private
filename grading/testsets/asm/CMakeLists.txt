@@ -1,0 +1,3 @@
+
+add_executable(asm_grading_tests test_asm.cxx)
+target_link_libraries(asm_grading_tests gtest gtest_main grading_testbase msulib ASSEMBLER)

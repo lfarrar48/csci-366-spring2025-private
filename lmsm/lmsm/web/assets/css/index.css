@@ -1,0 +1,72 @@
+th, td {
+    min-width: 40px;
+    height: 14px;
+}
+
+body {
+    max-width: initial;
+}
+
+textarea {
+    font-family: monospace;
+    resize: none;
+}
+
+textarea[readonly] {
+    background-color: lightgrey;
+}
+
+body {
+    padding: 0 20px;
+}
+
+:root {
+    --sp-color: #f2d826;
+    --pc-color: #30632c;
+    --ra-color: #a7f994;
+    --rp-color: #03cd1d;
+}
+
+td[contenteditable] {
+    border: 0.1rem solid lightgrey;
+    border-radius: 4px;
+}
+
+#memory-table td.is_on_stack {
+    background-color: var(--sp-color);
+}
+
+#memory-table td.is_insr {
+    border: 4px solid var(--pc-color);
+}
+
+#memory-table td.is_ra {
+    background-color: var(--ra-color);
+}
+
+#memory-table td.is_rp {
+    background-color: var(--rp-color);
+}
+
+td {
+    padding: 1px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+#reg-PC td {
+    background-color: var(--pc-color);
+    color: whitesmoke;
+}
+
+#reg-SP td {
+    background-color: var(--sp-color);
+}
+
+#reg-RA td {
+    background-color: var(--ra-color);
+}
+
+#reg-RP td {
+    background-color: var(--rp-color);
+}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Little Man Computer - CPU Simulator</title>
+<meta name="copyright" content="&copy; 2014-24 Peter L Higginson">
+<meta name="viewport" content="width=891, initial-scale=1" />
+<style>
+button {padding:1px 3px; border-width:1px; margin:2px; background-color:#E0E0E0;}
+select {background-color:#E0E0E0; border-width:1px;padding:1px 0;}
+[type=button] {padding:1px 3px; border-width:1px; margin:2px; background-color:#E0E0E0;}
+</style>
+<script src='routa_v1.5b_lmc.js'></script>
+<script type="text/javascript">document.addEventListener("keydown", (e) => {e = e || window.event; if(e.keyCode == 116 || (e.ctrlKey && e.keyCode == 82)) { running_restart(); e.preventDefault();}});</script>
+</head>
+<body id="lmcBody" onresize="getDimensions()" onload="startIt()" onkeydown="keyDown(event)" onkeyup="keyUp(event)" style="transform:scale(1,1); transform-origin:0 0;">
+<div id="in_xxa"></div>
+<script type="text/javascript"></script>
+</body>
+</html>

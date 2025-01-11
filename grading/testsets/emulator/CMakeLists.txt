@@ -1,0 +1,3 @@
+
+add_executable(emulator_grading_tests test_emulator.cxx)
+target_link_libraries(emulator_grading_tests gtest gtest_main grading_testbase msulib EMULATOR)

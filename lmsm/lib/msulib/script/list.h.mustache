@@ -1,0 +1,36 @@
+#ifndef {{label}}_H
+#define {{label}}_H
+
+#include <stdint.h>
+#include <stdbool.h>
+
+{{#hincludes}}
+#include "{{.}}"
+{{/hincludes}}
+
+{{#hdefs}}
+{{.}}
+{{/hdefs}}
+
+typedef struct {{struct_name}} {
+    {{typename}} *values;
+    size_t len, cap;
+} {{list_name}};
+
+{{list_name}} *{{struct_name}}_new();
+{{list_name}} *{{struct_name}}_clone(const {{list_name}} *list);
+void {{struct_name}}_clear({{list_name}} *list);
+{{typename}} {{struct_name}}_get({{list_name}} *list, size_t index);
+{{typename}} *{{struct_name}}_get_ref({{list_name}} *list, size_t index);
+const {{typename}} {{struct_name}}_get_const(const {{list_name}} *list, size_t index);
+void {{struct_name}}_set({{list_name}} *list, size_t index, {{typename}} value);
+void {{struct_name}}_append({{list_name}} *list, {{typename}} value);
+#define {{struct_name}}_push(list, value) {{struct_name}}_append(list, value)
+{{typename}} {{struct_name}}_pop({{list_name}} *list);
+void {{struct_name}}_ensure_capacity({{list_name}} *list, size_t capacity);
+void {{struct_name}}_free({{list_name}} *list{{#free}}, bool free_elements_too{{/free}});
+
+{{#eq}}bool {{struct_name}}_contains(const {{list_name}} *list, {{typename}} value);{{/eq}}
+{{#hash}}hash_t {{struct_name}}_hash(const {{list_name}} *list, hash_t seed);{{/hash}}
+
+#endif // {{label}}_H

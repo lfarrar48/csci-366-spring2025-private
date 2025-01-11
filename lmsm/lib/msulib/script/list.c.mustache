@@ -1,0 +1,125 @@
+#include <assert.h>
+#include <memory.h>
+#include <stdlib.h>
+
+{{#cincludes}}
+#include "{{.}}"
+{{/cincludes}}
+
+{{#cdefs}}
+{{.}}
+{{/cdefs}}
+
+{{#hash}}#include "msulib/hash.h"{{/hash}}
+
+{{list_name}} *{{struct_name}}_new() {
+    {{list_name}} *out = malloc(sizeof({{list_name}}));
+    assert(out && "out of memory\n");
+    memset(out, 0, sizeof({{list_name}}));
+    return out;
+}
+
+{{list_name}} *{{struct_name}}_clone(const {{list_name}} *list) {
+    {{list_name}} *out = malloc(sizeof({{list_name}}));
+    assert(out && "out of memory\n");
+    out->len = list->len;
+    out->cap = list->cap;
+    void *data = malloc(sizeof({{typename}}) * list->cap);
+    assert(data && "out of memory!\n");
+    out->values = data;
+    memcpy(out->values, list->values, sizeof({{typename}}) * list->len);
+    return out;
+}
+
+void {{struct_name}}_clear({{list_name}} *list) {
+{{#free}}
+    for (size_t i = 0; i < list->len; i++) {
+        {{free}}({{struct_name}}_get(list, i));
+    }
+{{/free}}
+    list->len = 0;
+}
+
+{{typename}} {{struct_name}}_get({{list_name}} *list, size_t index) {
+    assert(index < list->len && "index out of bounds read");
+    return list->values[index];
+}
+
+const {{typename}} {{struct_name}}_get_const(const {{list_name}} *list, size_t index) {
+    assert(index < list->len && "out of bounds read");
+    return list->values[index];
+}
+
+
+{{typename}} *{{struct_name}}_get_ref({{list_name}} *list, size_t index) {
+    assert(index < list->len && "index out of bounds read");
+    return &list->values[index];
+}
+
+void {{struct_name}}_set({{list_name}} *list, size_t index, {{typename}} value) {
+    assert(index < list->len && "out of bounds write");
+    list->values[index] = value;
+}
+
+void {{struct_name}}_append({{list_name}} *list, {{typename}} value) {
+    {{struct_name}}_ensure_capacity(list, list->len + 1);
+    list->values[list->len] = value;
+    list->len += 1;
+}
+
+{{typename}} {{struct_name}}_pop({{list_name}} *list) {
+    assert(list->len > 0 && "pop empty list");
+    list->len -= 1;
+    return list->values[list->len];
+}
+
+void {{struct_name}}_ensure_capacity({{list_name}} *list, size_t capacity) {
+    size_t newcap = list->cap;
+    if (!newcap) newcap = 16;
+    while (newcap < capacity) {
+        newcap *= 2;
+    }
+    if (newcap != list->cap) {
+        void *data = realloc(list->values, sizeof({{typename}}) * newcap);
+        assert(data && "out of memory\n");
+        list->values = data;
+        list->cap = newcap;
+    }
+}
+
+void {{struct_name}}_free({{list_name}} *list{{#free}}, bool free_children_too{{/free}}) {
+    if (list) {
+{{#free}}
+        if (free_children_too) {
+            for (size_t i = 0; i < list->len; i++) {
+                {{free}}({{struct_name}}_get(list, i));
+            }
+    }
+{{/free}}
+        free(list->values);
+        free(list);
+    }
+}
+
+{{#eq}}
+bool {{struct_name}}_contains(const {{list_name}} *list, {{typename}} value) {
+    for (size_t i = 0; i < list->len; i++) {
+        if ({{eq}}({{struct_name}}_get_const(list, i), value)) {
+            return true;
+        }
+    }
+    return false;
+}
+{{/eq}}
+
+{{#hash}}
+hash_t {{struct_name}}_hash(const {{list_name}} *list, hash_t seed) {
+    hash_t hash[2] = {0};
+    hash[0] = murmurhash(hash, sizeof(hash), seed);
+    for (size_t i = 0; i < list->len; i++) {
+        hash[1] = {{hash}}({{struct_name}}_get_const(list, i), seed);
+        hash[0] = murmurhash(hash, sizeof(hash), seed);
+    }
+    return hash[0];
+}
+{{/hash}}
