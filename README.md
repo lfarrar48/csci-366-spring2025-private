@@ -17,7 +17,7 @@ Please use the following steps to create a *private* copy of this repo for your 
 
 - Create a *private* repository in your own account by
     - Going to <https://github.com/new>
-    - Enter the name `csci-366-fall2025-private`
+    - Enter the name `csci-366-spring2025-private`
     - Select `Private`
     - Navigate to the `Settings` -> `Manage Access` section
     - Add `1cg` as a collaborator
