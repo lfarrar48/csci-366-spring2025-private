@@ -61,7 +61,8 @@ def cmake(repo_path, build_dir) -> bool:
         return False
     return True
 
-def mkdir_replace(path, copy_from: str | None = None) -> str:
+
+def mkdir_replace(path, copy_from=None) -> str:
     if os.path.exists(path):
         shutil.rmtree(path)
     if copy_from is not None:
@@ -106,9 +107,9 @@ def utest(student, target):
             test_results['passed'] += 1
         else:
             try:
-                test_results['tests'][test] = { "stdout": result.stdout.decode(), "stderr": result.stderr.decode() }
+                test_results['tests'][test] = {"stdout": result.stdout.decode(), "stderr": result.stderr.decode()}
             except UnicodeDecodeError as e:
-                test_results['tests'][test] = { "stdout": "", "stderr": str(e)}
+                test_results['tests'][test] = {"stdout": "", "stderr": str(e)}
             test_results['failed'] += 1
 
     return test_results
@@ -151,11 +152,10 @@ def gtest(student, target):
             test_results['passed'] += 1
         else:
             try:
-                test_results['tests'][test] = { "stdout": result.stdout.decode(), "stderr": result.stderr.decode() }
+                test_results['tests'][test] = {"stdout": result.stdout.decode(), "stderr": result.stderr.decode()}
             except UnicodeDecodeError as e:
-                test_results['tests'][test] = { "stdout": "", "stderr": str(e)}
+                test_results['tests'][test] = {"stdout": "", "stderr": str(e)}
             test_results['failed'] += 1
-
 
     return test_results
 
@@ -176,8 +176,9 @@ def setup_cmake_for_student(student_name) -> dict:
 
     result = subprocess.run(command, capture_output=True)
     if result.returncode != 0:
-        return { "error": result.stderr.decode() }
+        return {"error": result.stderr.decode()}
     return {}
+
 
 def make_target(student, target):
     command = [
@@ -194,7 +195,7 @@ def make_target(student, target):
         stderr = result.stderr.decode()
         if args.verbose:
             print(f"make failed: {stderr!r}")
-        return { "error": stderr }
+        return {"error": stderr}
     return {}
 
 
@@ -297,6 +298,7 @@ def grade_assembly(student):
             "total": 1,
         }
     }
+
 
 def during_this_semester(ts: datetime) -> bool:
     now = datetime.now(ts.tzinfo)
@@ -447,7 +449,7 @@ def grade():
                 test_grade = 100 * test_results['passed'] / test_results['total']
             summary[name] = f"{test_grade:.2f}"
 
-        summary['project'] = f"(unweighted) {100 * passed/total:.2f}"
+        summary['project'] = f"(unweighted) {100 * passed / total:.2f}"
         results['summary'] = summary
 
         results_json = json.dumps(results, indent=4)
@@ -456,7 +458,7 @@ def grade():
         with open(f"grading/repos/{student}/results.json", "w") as f:
             f.write(results_json)
 
-        grades.append((student, passed, total, passed/total))
+        grades.append((student, passed, total, passed / total))
 
     if args.all_students and args.all_assignments:
         with open("grading/grades.csv", "w") as f:
