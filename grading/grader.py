@@ -449,7 +449,8 @@ def grade():
                 test_grade = 100 * test_results['passed'] / test_results['total']
             summary[name] = f"{test_grade:.2f}"
 
-        summary['project'] = f"(unweighted) {100 * passed / total:.2f}"
+        grade = passed / total if total != 0 else 0
+        summary['project'] = f"(unweighted) {100 * grade:.2f}"
         results['summary'] = summary
 
         results_json = json.dumps(results, indent=4)
@@ -458,7 +459,7 @@ def grade():
         with open(f"grading/repos/{student}/results.json", "w") as f:
             f.write(results_json)
 
-        grades.append((student, passed, total, passed / total))
+        grades.append((student, passed, total, grade))
 
     if args.all_students and args.all_assignments:
         with open("grading/grades.csv", "w") as f:
