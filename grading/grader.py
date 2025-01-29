@@ -461,8 +461,14 @@ def grade():
 
         grades.append((student, passed, total, student_grade))
 
-    if args.all_students and args.all_assignments:
-        with open("grading/grades.csv", "w") as f:
+    grade_file = None
+    if args.to:
+        grade_file = args.to
+    elif args.all_students and args.all_assignments:
+        grade_file = "grading/grades.csv"
+
+    if grade_file is not None:
+        with open(grade_file, "w") as f:
             w = csv.writer(f)
             w.writerow(('student', 'passed', 'total', 'grade'))
             w.writerows(grades)
@@ -510,6 +516,7 @@ if __name__ == "__main__":
                               help='remove cloned repos and re-clone')
 
     parser_grade = commands.add_parser("grade", help='grade code')
+    parser_grade.add_argument("--to", help='a file to write grades to')
     parser_grade.add_argument("--clean", default=False, action='store_true', help='clean build directory first')
     parser_grade.add_argument("-v", default=False, action='store_true', dest="verbose", help='print verbose output')
     group = parser_grade.add_mutually_exclusive_group(required=True)
