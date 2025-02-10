@@ -7,7 +7,7 @@
 char *NUMBER_STRS[10] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
 
 void bbb_start_game() {
-    srandom(time(NULL)); // seed random()
+    srand(time(NULL)); // seed random()
     int game_board = 0;  // reset the board
     printf("Welcome to bit-bac-boe!\n\n");
     bbb_print_board(game_board);
@@ -76,8 +76,8 @@ int bbb_game_result(int board) {
 
 int bbb_get_computer_move(int board) {
     while(1) {
-        long rand = random();
-        int random_cell = rand % 8 + 1;
+        long random = rand();
+        int random_cell = random % 8 + 1;
         if (bbb_cell_is_available(board, random_cell)) {
             return random_cell;
         }
@@ -125,16 +125,24 @@ int bbb_cell_is_available(int board, int cell) {
 
 int bbb_owns_cell(int board, int player, int cell) {
     // TODO compute a mask for the offset for the given player return 0 if the player owns the bit and non-zero otherwise
-    return 0;
+    int bit_position = 2 * (cell - 1) + player;
+    return (board & (1 << bit_position)) != 0;
 }
 
 int bbb_update_board(int board, int player, int cell) {
     // TODO compute a mask for the offset for the given player and cell and flip that bit to 1
-    return board;
+	int bit_position = 2 * (cell - 1) + player;
+    return board | (1 << bit_position);
 }
 
 const char *bbb_get_cell_string(int board, int cell) {
     // TODO - test if the cell belongs to COMPUTER_PLAYER and return an O or the human player and return an X
+	if (bbb_owns_cell(board, COMPUTER_PLAYER, cell)) {
+		return "O";
+	}
+	else if (bbb_owns_cell(board, HUMAN_PLAYER, cell)) {
+	    return "X";
+	}
     return NUMBER_STRS[cell];
 }
 
