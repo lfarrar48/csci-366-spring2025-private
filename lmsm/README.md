@@ -99,8 +99,8 @@ To work with these new registers and this new memory, the LMSM provides a series
 
 The stack can also be adjusted and written to and read from with the following instructions:
 
-[!WARNING]
-The opcodes of these instructions are somewhat misleading. Because zero is not a signable integer, we cannot use it as the first value for an imaginary `-0xx` set. Instead we have to use the upper bound as the inclusive limit. This means that, for example, the `-1xx` instruction range is actually the set of numbers `-001 to -100` where `-001` corresponds to the value `0`. A negative instruction can be mapped to it's value by subtracting the first value in it's set and negating the result: `-(-003 - -001) = 2`. Here `-001` is the first value in the `-1xx` set so we have the result `opval = -(opcode - -001)`
+> [!WARNING]
+> The opcodes of these instructions are somewhat misleading. Because zero is not a signable integer, we cannot use it as the first value for an imaginary `-0xx` set. Instead we have to use the upper bound as the inclusive limit. This means that, for example, the `-1xx` instruction range is actually the set of numbers `-001 to -100` where `-001` corresponds to the value `0`. A negative instruction can be mapped to it's value by subtracting the first value in it's set and negating the result: `-(-003 - -001) = 2`. Here `-001` is the first value in the `-1xx` set so we have the result `opval = -(opcode - -001)`
 
 | code | assembly | asm_instruction        | description                                                                                                     |
 |------|----------|------------------------|-----------------------------------------------------------------------------------------------------------------|
