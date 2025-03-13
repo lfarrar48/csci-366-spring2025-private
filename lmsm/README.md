@@ -94,16 +94,20 @@ To work with these new registers and this new memory, the LMSM provides a series
 | 934  | SMAX     | Stack maximum                | Pops the top two values of the stack and pushes the maximum value of the two back onto the stack                         |
 | 935  | SMIN     | Stack minimum                | Pops the top two values of the stack and pushes the minimum value of the two back onto the stack                         |
 | 937  | SCPMGT   | Stack compare (greater than) | Pops the top two values of the stack and 1 if the second value is greater than the top value, 0 otherwise                |
-| 937  | SCPMLT   | Stack compare (less than)    | Pops the top two values of the stack and 1 if the second value is less than the top value, 0 otherwise                   |
-| 937  | SCPMLT   | Stack not                    | Pops the top value of the stack, if it is 0, pushes 1, pushes 0 otherwise                                                |
+| 938  | SCPMLT   | Stack compare (less than)    | Pops the top two values of the stack and 1 if the second value is less than the top value, 0 otherwise                   |
+| 939  | SNOT     | Stack not                    | Pops the top value of the stack, pushes 1 if the value is 0 and pushes 0 otherwise                                       |
 
 The stack can also be adjusted and written to and read from with the following instructions:
+
+[!WARNING]
+The opcodes of these instructions are somewhat misleading. Because zero is not a signable integer, we cannot use it as the first value for an imaginary `-0xx` set. Instead we have to use the upper bound as the inclusive limit. This means that, for example, the `-1xx` instruction range is actually the set of numbers `-001 to -100` where `-001` corresponds to the value `0`. A negative instruction can be mapped to it's value by subtracting the first value in it's set and negating the result: `-(-003 - -001) = 2`. Here `-001` is the first value in the `-1xx` set so we have the result `opval = -(opcode - -001)`
 
 | code | assembly | asm_instruction        | description                                                                                                     |
 |------|----------|------------------------|-----------------------------------------------------------------------------------------------------------------|
 | -1XX | SPADD    | Stack pointer add      | Adds XX to the current stack pointer                                                                            |
 | -2XX | SPSUB    | Stack pointer subtract | Subtracts XX from the current stack pointer                                                                     |
 | -3XX | SLDA     | Stack load             | Pushes the value in the stack XX slots up from the top onto the stack                                           |
+| -4XX | ..       | ..                     | Reserved for future use                                                                                         |
 | -5XX | STA      | Stack store            | Stores the value on the top of the stack into the stack slot XX slots up, then drops the top value on the stack |
 
 ##### Synthetic Instruction
@@ -142,7 +146,7 @@ normal assembly does.
 | 910  | JAL      | Jump & Link     | Jumps to the function address in the accumulator, saving next instruction address in the `return_address` register |
 | 911  | RET      | Return          | Sets the program counter to the value found int the return address register                                        |
 | 925  | RPUSH    | Return push     | Pushes the current value in the return address register onto the return address stack                              |
-| 926  | RPOP     | Return pop      | Pops the top value on the return address register into the return address stack                                    |
+| 926  | RPOP     | Return pop      | Pops the top value off the return address stack into the return address register                                   |
 
 Using these instructions, LMSM implements the following calling convention:
 
