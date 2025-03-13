@@ -453,7 +453,7 @@ TEST(emulator_machine_suite,test_rpush_instruction){
     emulator_exec_instruction(emulator, 925); // RPUSH
     ASSERT_EQ(emulator->return_address, 10);
     ASSERT_EQ(emulator->memory[100], 10);
-    ASSERT_EQ(emulator->return_address_pointer, 100);
+    ASSERT_EQ(emulator->return_stack_pointer, 100);
     emulator_free(emulator);
 }
 
@@ -463,13 +463,13 @@ TEST(emulator_machine_suite,test_rpop_instruction_removes_top_of_stack){
     emulator_exec_instruction(emulator, 925); // RPUSH
     ASSERT_EQ(emulator->return_address, 10);
     ASSERT_EQ(emulator->memory[100], 10);
-    ASSERT_EQ(emulator->return_address_pointer, 100);
+    ASSERT_EQ(emulator->return_stack_pointer, 100);
 
     emulator->return_address = 20;
 
     emulator_exec_instruction(emulator, 926); // RPOP
     ASSERT_EQ(emulator->return_address, 10);
-    ASSERT_EQ(emulator->return_address_pointer, 99);
+    ASSERT_EQ(emulator->return_stack_pointer, 99);
 
     emulator_free(emulator);
 }

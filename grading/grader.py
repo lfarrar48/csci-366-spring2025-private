@@ -61,7 +61,8 @@ def cmake(repo_path, build_dir) -> bool:
         return False
     return True
 
-def mkdir_replace(path, copy_from: str | None = None) -> str:
+
+def mkdir_replace(path, copy_from=None) -> str:
     if os.path.exists(path):
         shutil.rmtree(path)
     if copy_from is not None:
@@ -106,9 +107,9 @@ def utest(student, target):
             test_results['passed'] += 1
         else:
             try:
-                test_results['tests'][test] = { "stdout": result.stdout.decode(), "stderr": result.stderr.decode() }
+                test_results['tests'][test] = {"stdout": result.stdout.decode(), "stderr": result.stderr.decode()}
             except UnicodeDecodeError as e:
-                test_results['tests'][test] = { "stdout": "", "stderr": str(e)}
+                test_results['tests'][test] = {"stdout": "", "stderr": str(e)}
             test_results['failed'] += 1
 
     return test_results
@@ -151,11 +152,10 @@ def gtest(student, target):
             test_results['passed'] += 1
         else:
             try:
-                test_results['tests'][test] = { "stdout": result.stdout.decode(), "stderr": result.stderr.decode() }
+                test_results['tests'][test] = {"stdout": result.stdout.decode(), "stderr": result.stderr.decode()}
             except UnicodeDecodeError as e:
-                test_results['tests'][test] = { "stdout": "", "stderr": str(e)}
+                test_results['tests'][test] = {"stdout": "", "stderr": str(e)}
             test_results['failed'] += 1
-
 
     return test_results
 
@@ -176,8 +176,9 @@ def setup_cmake_for_student(student_name) -> dict:
 
     result = subprocess.run(command, capture_output=True)
     if result.returncode != 0:
-        return { "error": result.stderr.decode() }
+        return {"error": result.stderr.decode()}
     return {}
+
 
 def make_target(student, target):
     command = [
@@ -194,7 +195,7 @@ def make_target(student, target):
         stderr = result.stderr.decode()
         if args.verbose:
             print(f"make failed: {stderr!r}")
-        return { "error": stderr }
+        return {"error": stderr}
     return {}
 
 
@@ -297,6 +298,7 @@ def grade_assembly(student):
             "total": 1,
         }
     }
+
 
 def during_this_semester(ts: datetime) -> bool:
     now = datetime.now(ts.tzinfo)
@@ -447,7 +449,8 @@ def grade():
                 test_grade = 100 * test_results['passed'] / test_results['total']
             summary[name] = f"{test_grade:.2f}"
 
-        summary['project'] = f"(unweighted) {100 * passed/total:.2f}"
+        student_grade = passed / total if total != 0 else 0
+        summary['project'] = f"(unweighted) {100 * student_grade:.2f}"
         results['summary'] = summary
 
         results_json = json.dumps(results, indent=4)
@@ -456,10 +459,16 @@ def grade():
         with open(f"grading/repos/{student}/results.json", "w") as f:
             f.write(results_json)
 
-        grades.append((student, passed, total, passed/total))
+        grades.append((student, passed, total, student_grade))
 
-    if args.all_students and args.all_assignments:
-        with open("grading/grades.csv", "w") as f:
+    grade_file = None
+    if args.to:
+        grade_file = args.to
+    elif args.all_students and args.all_assignments:
+        grade_file = "grading/grades.csv"
+
+    if grade_file is not None:
+        with open(grade_file, "w") as f:
             w = csv.writer(f)
             w.writerow(('student', 'passed', 'total', 'grade'))
             w.writerows(grades)
@@ -507,6 +516,7 @@ if __name__ == "__main__":
                               help='remove cloned repos and re-clone')
 
     parser_grade = commands.add_parser("grade", help='grade code')
+    parser_grade.add_argument("--to", help='a file to write grades to')
     parser_grade.add_argument("--clean", default=False, action='store_true', help='clean build directory first')
     parser_grade.add_argument("-v", default=False, action='store_true', dest="verbose", help='print verbose output')
     group = parser_grade.add_mutually_exclusive_group(required=True)
