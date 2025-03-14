@@ -106,9 +106,9 @@ The stack can also be adjusted and written to and read from with the following i
 |------|----------|------------------------|-----------------------------------------------------------------------------------------------------------------|
 | -1XX | SPADD    | Stack pointer add      | Adds XX to the current stack pointer                                                                            |
 | -2XX | SPSUB    | Stack pointer subtract | Subtracts XX from the current stack pointer                                                                     |
-| -3XX | SLDA     | Stack load             | Pushes the value in memory XX slots above the stack-pointer onto the stack                                                  |
+| -3XX | SLDA     | Stack load             | Pushes the value at XX'th slot down the stack onto the stack.                                                  |
 | -4XX | ..       | ..                     | Reserved for future use                                                                                         |
-| -5XX | STA      | Stack store            | Stores the value on the top of the stack into the stack slot XX slots up, then drops the top value on the stack |
+| -5XX | STA      | Stack store            | Pops the top value off of the stack and **then** set's the XX'th slow down the stack to that value |
 
 ##### Synthetic Instruction
 
