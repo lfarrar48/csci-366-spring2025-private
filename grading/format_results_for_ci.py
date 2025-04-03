@@ -26,7 +26,7 @@ def inform_errors(results, label):
     print()
     print(f"=== {label: ^12} ===")
 
-    with open(f"grading/github/{label}.txt", "w") as f:
+    with open(f"grading/gh/{label}.txt", "w") as f:
         if "error" in output:
             print("errored out")
             f.write(pfx(output["error"]))
