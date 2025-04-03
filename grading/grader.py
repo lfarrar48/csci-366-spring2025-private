@@ -420,7 +420,7 @@ def update_testsets():
     season = 'spring' if now.month <= 6 else 'fall'
     repo_tag = f'msu/csci-366-{season}{now.year}'
 
-    if repo_tag in subprocess.run(['git', 'remote', 'get-url', 'origin'], capture_output=True):
+    if repo_tag in subprocess.run(['git', 'remote', 'get-url', 'origin'], capture_output=True).stdout.decode():
         return
 
     global LATEST_TESTSET
@@ -438,6 +438,8 @@ def update_testsets():
 
     assets = {asset.name: asset.browser_download_url for asset in release.get_assets()}
     testset_file_url = assets['testsets.zip']
+    if args.verbose:
+        print(f"downloading testsets.zip from {testset_file_url!r}")
     file = requests.get(testset_file_url, stream=True)
     file.raise_for_status()
     target_file = "grading/testsets.zip"

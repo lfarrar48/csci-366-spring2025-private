@@ -27,7 +27,7 @@ jobs:
           ln -s ../../../ repo
           popd
           pip install PyGithub
-          python grading/grader.py grade --all-assignments -s pathfinder > grading/gh/stdout.txt 2> grading/gh/stderr.txt || cat grading/gh/stderr.txt
+          python grading/grader.py grade -v --all-assignments -s pathfinder > grading/gh/stdout.txt 2> grading/gh/stderr.txt || cat grading/gh/stderr.txt
           python grading/format_results_for_ci.py grading/repos/pathfinder/results.json > grading/status.txt
           
           function pad_if_empty() {
