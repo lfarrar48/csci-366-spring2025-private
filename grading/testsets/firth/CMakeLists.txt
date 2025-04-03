@@ -1,3 +1,0 @@
-
-add_executable(firth_grading_tests test_firth.cxx)
-target_link_libraries(firth_grading_tests gtest gtest_main grading_testbase msulib FIRTH ASSEMBLER EMULATOR)

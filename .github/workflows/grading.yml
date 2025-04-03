@@ -22,12 +22,12 @@ jobs:
         run: |
           set -ex
           sudo apt install -y jq coreutils
-          mkdir -p grading/repos/pathfinder/ grading/github/
+          mkdir -p grading/repos/pathfinder/ grading/gh/
           pushd grading/repos/pathfinder/
           ln -s ../../../ repo
           popd
           pip install PyGithub
-          python grading/grader.py grade --all-assignments -s pathfinder > grading/github/stdout.txt 2> grading/github/stderr.txt || cat grading/github/stderr.txt
+          python grading/grader.py grade --all-assignments -s pathfinder > grading/gh/stdout.txt 2> grading/gh/stderr.txt || cat grading/gh/stderr.txt
           python grading/format_results_for_ci.py grading/repos/pathfinder/results.json > grading/status.txt
           
           function pad_if_empty() {
@@ -35,8 +35,8 @@ jobs:
               echo "PADDED BY AUTOGRADER CUZ THIS CAN'T BE EMPTY CUZ GITHUB IS WEIRD (not an actual error)" >> $1
             fi
           }
-          pad_if_empty grading/github/stderr.txt
-          pad_if_empty grading/github/stdout.txt
+          pad_if_empty grading/gh/stderr.txt
+          pad_if_empty grading/gh/stdout.txt
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -46,7 +46,7 @@ jobs:
           body_path: grading/status.txt
           files: |
             grading/repos/pathfinder/results.json
-            grading/github/*.txt
+            grading/gh/*.txt
 
 #      - name: commit grading results
 #        run: |
