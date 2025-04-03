@@ -431,7 +431,7 @@ def update_testsets():
     release = repo.get_release('testset')
     LATEST_TESTSET = release
 
-    testset_version_file = f'grading/.testsetv'
+    testset_version_file = f'grading/testsets/.version'
     testset_modified_date = read_file(testset_version_file)
     if testset_modified_date == str(release.last_modified_datetime) and not args.clean:
         return
