@@ -420,9 +420,6 @@ def update_testsets():
     season = 'spring' if now.month <= 6 else 'fall'
     repo_tag = f'msu/csci-366-{season}{now.year}'
 
-    if repo_tag in subprocess.run(['git', 'remote', 'get-url', 'origin'], capture_output=True).stdout.decode():
-        return
-
     global LATEST_TESTSET
     if LATEST_TESTSET is not None:
         return
