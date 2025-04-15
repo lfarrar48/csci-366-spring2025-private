@@ -399,7 +399,7 @@ TEST(code_generation, dat_instruction_generates_properly) {
     asm_error_t *err = nullptr;
     int *code = asm_assemble(src, &err);
 
-    ASSERT_EQ(code[0], 0) << "expected '701'";
+    ASSERT_EQ(code[0], 701) << "expected '701'";
     ASSERT_EQ(code[1], 0) << "expected HLT:000";
     ASSERT_EQ(err, nullptr);
 
