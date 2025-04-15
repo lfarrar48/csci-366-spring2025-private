@@ -11,6 +11,8 @@ from typing import Callable
 
 import github
 import csv
+import requests
+import zipfile
 
 
 def get_github() -> github.Github:
@@ -18,8 +20,8 @@ def get_github() -> github.Github:
     if env in globals():
         return globals()[env]
 
-    access_token = os.environ["GITHUB_TOKEN"]
-    auth = github.Auth.Token(access_token)
+    access_token = os.environ.get("GITHUB_TOKEN", None)
+    auth = github.Auth.Token(access_token) if access_token is not None else None
     gh = github.Github(auth=auth)
     globals()[env] = gh
     return gh
@@ -75,6 +77,13 @@ def mkdir_replace(path, copy_from=None) -> str:
 def write_file(path, content):
     with open(path, mode="w") as f:
         f.write(content)
+
+def read_file(path, default=''):
+    try:
+        with open(path) as f:
+            return f.read()
+    except IOError as _:
+        return default
 
 
 def utest(student, target):
@@ -299,7 +308,6 @@ def grade_assembly(student):
         }
     }
 
-
 def during_this_semester(ts: datetime) -> bool:
     now = datetime.now(ts.tzinfo)
     if now.year != ts.year:
@@ -406,7 +414,48 @@ def clone_repos():
             print(f'running {command} (not really)')
 
 
+LATEST_TESTSET = None
+def update_testsets():
+    now = datetime.now()
+    season = 'spring' if now.month <= 6 else 'fall'
+    repo_tag = f'msu/csci-366-{season}{now.year}'
+
+    global LATEST_TESTSET
+    if LATEST_TESTSET is not None:
+        return
+    gh = get_github()
+    repo = gh.get_repo(repo_tag)
+    release = repo.get_release('testset')
+    LATEST_TESTSET = release
+
+    testset_version_file = f'grading/testsets/.version'
+    testset_modified_date = read_file(testset_version_file)
+    if testset_modified_date == str(release.last_modified_datetime) and not args.clean:
+        return
+
+    assets = {asset.name: asset.browser_download_url for asset in release.get_assets()}
+    testset_file_url = assets['testsets.zip']
+    if args.verbose:
+        print(f"downloading testsets.zip from {testset_file_url!r}")
+    file = requests.get(testset_file_url, stream=True)
+    file.raise_for_status()
+    target_file = "grading/testsets.zip"
+    with open(target_file, "wb") as f:
+        for chunk in file.iter_content():
+            f.write(chunk)
+    with zipfile.ZipFile(target_file, 'r') as zr:
+        target = "grading/testsets"
+        if os.path.exists(target):
+            shutil.rmtree(target)
+        os.mkdir(target)
+        zr.extractall("grading")
+    os.remove(target_file)
+    write_file(testset_version_file, str(release.last_modified_datetime))
+
+
 def grade():
+    update_testsets()
+
     assignments = get_assignments()
     if args.verbose:
         names = [name for (name, _) in assignments]
@@ -497,7 +546,7 @@ ASSIGNMENTS = {
 
 if __name__ == "__main__":
     if not os.path.exists("SYLLABUS.md"):
-        print("error: must be in repo root")
+        print("error: must be run in repo root")
         exit(1)
 
     parser = argparse.ArgumentParser("autograder", description="the autograder for 366")

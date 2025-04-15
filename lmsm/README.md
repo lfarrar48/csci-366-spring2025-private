@@ -104,11 +104,11 @@ The stack can also be adjusted and written to and read from with the following i
 
 | code | assembly | asm_instruction        | description                                                                                                     |
 |------|----------|------------------------|-----------------------------------------------------------------------------------------------------------------|
-| -1XX | SPADD    | Stack pointer add      | Adds XX to the current stack pointer                                                                            |
-| -2XX | SPSUB    | Stack pointer subtract | Subtracts XX from the current stack pointer                                                                     |
-| -3XX | SLDA     | Stack load             | Pushes the value in the stack XX slots up from the top onto the stack                                           |
+| -1XX | SPADD    | Stack pointer add      | Adds 1 + XX to the current stack pointer                                                                        |
+| -2XX | SPSUB    | Stack pointer subtract | Subtracts 1 + XX from the current stack pointer                                                                 |
+| -3XX | SLDA     | Stack load             | Copies the value at XX'th slot down the stack and pushes it onto the top of the stack.                          |
 | -4XX | ..       | ..                     | Reserved for future use                                                                                         |
-| -5XX | STA      | Stack store            | Stores the value on the top of the stack into the stack slot XX slots up, then drops the top value on the stack |
+| -5XX | SSTA     | Stack store            | Pops the top value off of the stack and **then** sets the XX'th slot down the stack to that value               |
 
 ##### Synthetic Instruction
 

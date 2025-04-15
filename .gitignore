@@ -20,7 +20,7 @@ build-grading/
 # grading
 grading/scripts/
 grading/repos/
-grading/github/
+grading/gh/
 grading/students.csv
 grading/grades.csv
 grading/status.txt
