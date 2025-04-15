@@ -58,22 +58,60 @@ bool asm_is_arg_insr(const char *insr) {
     return false;
 }
 
-
 asm_insr_t *asm_parse_insr(const msu_str_t *line) {
-    asm_insr_t *new_insr = malloc(sizeof(asm_insr_t));
+    asm_insr_t *new_insr = calloc(1, sizeof(asm_insr_t));
     new_insr->error = NULL;
-    new_insr->label = NULL;
-    new_insr->instruction = NULL;
-    new_insr->label_reference = NULL;
+    new_insr->label = msu_str_new("");
+    new_insr->instruction = msu_str_new("");
+    new_insr->label_reference = msu_str_new("");
     new_insr->value = 0;
 
-    // allocate and copy over the char data
-    char buffer[msu_str_len(line) + 1];
+    size_t len = strlen(msu_str_data(line));
+    char *buffer = malloc(len + 1);
     strcpy(buffer, msu_str_data(line));
 
-    // TODO - using strtok() & strtol() fill in the new_insr struct based on the content of this assembler line
-    //  note: remember to null-check your tokens
+    char *label = strtok(buffer, " \t\n");
+    char *insr = strtok(NULL, " \t\n");
+    char *arg = strtok(NULL, " \t\n");
 
+    if (label && !asm_is_insr(label)) {
+        new_insr->label = msu_str_new(label);
+        new_insr->instruction = msu_str_new(insr ? insr : "");
+    } else {
+        new_insr->label = msu_str_new("");
+        new_insr->instruction = msu_str_new(label ? label : "");
+        arg = insr;
+    }
+
+    if (!asm_is_insr(msu_str_data(new_insr->instruction))) {
+        new_insr->error = asm_error_new(ASM_ERROR_BAD_INSR, msu_str_clone(new_insr->instruction));
+        free(buffer);
+        return new_insr;
+    }
+
+    if (asm_is_arg_insr(msu_str_data(new_insr->instruction))) {
+        if (!arg) {
+            new_insr->error = asm_error_new(ASM_ERROR_BAD_ARG, msu_str_new("missing argument"));
+            free(buffer);
+            return new_insr;
+        }
+
+        if (!isdigit((unsigned char)arg[0]) || strchr(arg, '$') != NULL) {
+            new_insr->label_reference = msu_str_new(arg);
+            new_insr->value = 0;
+            free(buffer);
+            return new_insr;
+        } else {
+            char *endptr;
+            int val = strtol(arg, &endptr, 10);
+            if (*endptr != '\0' || val > 999 || val < -999) {
+                new_insr->error = asm_error_new(ASM_ERROR_BAD_ARG, msu_str_new(arg ? arg : "(null)"));
+            } else {
+                new_insr->value = val;
+            }
+        }
+    }
+    free(buffer);
     return new_insr;
 }
 
@@ -103,6 +141,15 @@ int asm_insr_size(const asm_insr_t *insr) {
 int asm_find_label_offset(const list_of_asm_insrs_t *insrs, const msu_str_t *label) {
     // TODO look through the list of instructions for the one with the given label
     //  if none exists return -1
+    int pc = 0;
+    for (size_t i = 0; i < insrs->len; i++) {
+        const asm_insr_t *insr = list_of_asm_insrs_get_const(insrs, i);
+        if (!msu_str_is_empty(insr->label) && msu_str_eq(insr->label, label)) {
+            return pc;
+        }
+        pc += asm_insr_size(insr);
+    }
+    return -1;
 }
 
 asm_error_t *asm_emit(list_of_asm_insrs_t *insrs, int outcode[], size_t codesize) {
@@ -125,15 +172,43 @@ asm_error_t *asm_emit(list_of_asm_insrs_t *insrs, int outcode[], size_t codesize
             value = insr->value;
         }
 
-        if (msu_str_eqs(insr->instruction, "HLT") || msu_str_eqs(insr->instruction, "COB")) {
-            outcode[off] = 0;
-        } else if (msu_str_eqs(insr->instruction, "ADD")) {
-            outcode[off] = 100 + value;
-        } else {
-            return asm_error_new(ASM_ERROR_BAD_INSR, msu_str_printf("unknown instruction '%s'\n", msu_str_data(insr->instruction)));
-        }
+        const char *inst = msu_str_data(insr->instruction);
 
-        off += slots;
+        if (strcmp(inst, "HLT") == 0 || strcmp(inst, "COB") == 0) outcode[off++] = 0;
+        else if (strcmp(inst, "ADD") == 0) outcode[off++] = 100 + value;
+        else if (strcmp(inst, "SUB") == 0) outcode[off++] = 200 + value;
+        else if (strcmp(inst, "STA") == 0) outcode[off++] = 300 + value;
+        else if (strcmp(inst, "LDI") == 0) outcode[off++] = 400 + value;
+        else if (strcmp(inst, "LDA") == 0) outcode[off++] = 500 + value;
+        else if (strcmp(inst, "BRA") == 0) outcode[off++] = 600 + value;
+        else if (strcmp(inst, "BRZ") == 0) outcode[off++] = 700 + value;
+        else if (strcmp(inst, "BRP") == 0) outcode[off++] = 800 + value;
+        else if (strcmp(inst, "INP") == 0) outcode[off++] = 901;
+        else if (strcmp(inst, "OUT") == 0) outcode[off++] = 902;
+        else if (strcmp(inst, "JAL") == 0) outcode[off++] = 910;
+        else if (strcmp(inst, "RET") == 0) outcode[off++] = 911;
+        else if (strcmp(inst, "SPUSH") == 0) outcode[off++] = 920;
+        else if (strcmp(inst, "SPOP") == 0) outcode[off++] = 921;
+        else if (strcmp(inst, "SDUP") == 0) outcode[off++] = 922;
+        else if (strcmp(inst, "SDROP") == 0) outcode[off++] = 923;
+        else if (strcmp(inst, "SSWAP") == 0) outcode[off++] = 924;
+        else if (strcmp(inst, "SADD") == 0) outcode[off++] = 930;
+        else if (strcmp(inst, "SSUB") == 0) outcode[off++] = 931;
+        else if (strcmp(inst, "SMUL") == 0) outcode[off++] = 932;
+        else if (strcmp(inst, "SDIV") == 0) outcode[off++] = 933;
+        else if (strcmp(inst, "SMAX") == 0) outcode[off++] = 934;
+        else if (strcmp(inst, "SMIN") == 0) outcode[off++] = 935;
+        else if (strcmp(inst, "SPUSHI") == 0) {
+            outcode[off++] = 400 + value;
+            outcode[off++] = 920;
+        } else if (strcmp(inst, "CALL") == 0) {
+            outcode[off++] = 400 + value;
+            outcode[off++] = 910;
+        } else if (strcmp(inst, "DAT") == 0) {
+            outcode[off++] = value;
+        } else {
+            return asm_error_new(ASM_ERROR_BAD_INSR, msu_str_printf("unknown instruction '%s'\n", inst));
+        }
     }
 
     return NULL;
