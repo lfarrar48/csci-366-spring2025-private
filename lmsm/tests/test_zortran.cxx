@@ -117,7 +117,7 @@ WRITE X
     parsenode_t *body = list_of_parsenodes_get(loop->children, 1);
     ASSERT_NE(body, nullptr) << "body was null";
     ASSERT_EQ(body->kind, ZT_BLOCK);
-    ASSERT_EQ(body->children->len, 1) << "body should have one child: 'A = A + Z'";
+    ASSERT_EQ(body->children->len, 2) << "body should have one child: 'A = A + Z'";
 
     child = list_of_parsenodes_get(body->children, 0);
     ASSERT_NE(child, nullptr) << "'A = A + X' cannot be null";

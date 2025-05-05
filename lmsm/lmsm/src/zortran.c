@@ -76,7 +76,6 @@ parsenode_t *zt_parse_stmt_impl(parser *parser) {
             parsenode_t *item = zt_parse_stmt_impl(parser);
             parsenode_add_child(block, item);
         }
-
         if (!parser_take_kw(parser, "END")) {
             parsenode_set_error(block, msu_str_new("expected 'end' after block"));
         }
@@ -124,36 +123,42 @@ parsenode_t *zt_parse_condition(parser *parser) {
     if (parser_peek_punct(parser, ">=") || parser_peek_punct(parser, "=")) {
         expr = parsenode_new(ZT_OP, parser_take(parser));
         parsenode_add_child(expr, lhs);
+
+        parsenode_t *rhs = zt_parse_expression(parser);  // 👈 ALLOW ANY EXPRESSION
+        if (!rhs) {
+            rhs = parsenode_new(ZT_ERROR, NULL);
+            parsenode_set_error(rhs, msu_str_new("expected right-hand expression"));
+        }
+        parsenode_add_child(expr, rhs);
+        return expr;
     } else {
         expr = parsenode_new(ZT_ERROR, parser_take(parser));
         parsenode_set_error(expr, msu_str_new("expected '>=' or '=' for conditional expression"));
         return expr;
     }
-
-    parsenode_t *rhs;
-    if (parser_peek_kind(parser, TT_INT) && msu_str_eqs(parser_peek(parser)->content, "0")) {
-        rhs = parsenode_new(ZT_INT, parser_take(parser));
-    } else {
-        rhs = parsenode_new(ZT_ERROR, parser_take(parser));
-        parsenode_set_error(rhs, msu_str_new("expected '0'"));
-    }
-    parsenode_add_child(expr, rhs);
-
-    return expr;
 }
+
 
 parsenode_t *zt_parse_expression(parser *parser) {
-    parsenode_t *out = zt_parse_primary(parser);
-    if (!out) return NULL;
+    parsenode_t *lhs = zt_parse_primary(parser);
+    if (!lhs) return NULL;
 
-    // TODO look for a `+` or `-` character and, if it exists, create a ZT_OP parse node that
-    // contains the first primary expression and then parse another primary expression and add
-    // as a second child
-    //
-    // assign this new parse_node to out so it will be returned below...
+    if (parser_peek_punct(parser, "+") || parser_peek_punct(parser, "-")) {
+        token *op_tok = parser_take(parser);
+        parsenode_t *rhs = zt_parse_primary(parser);
+        if (!rhs) {
+            rhs = parsenode_new(ZT_ERROR, NULL);
+            parsenode_set_error(rhs, msu_str_new("expected value after operator"));
+        }
+        parsenode_t *op = parsenode_new(ZT_OP, op_tok);
+        parsenode_add_child(op, lhs);
+        parsenode_add_child(op, rhs);
+        return op;
+    }
 
-    return out;
+    return lhs;
 }
+
 
 parsenode_t *zt_parse_primary(parser *parser) {
     parsenode_t *out = NULL;
@@ -265,49 +270,100 @@ void zt_compile_impl(parsenode_t *node, zt_context_t *ctx, msu_str_builder_t sb)
         const msu_str_t *body_label = msu_str_printf("_$body%d", label_num);
         const msu_str_t *end_label = msu_str_printf("_$end%d", label_num);
 
-        msu_str_builder_printf(sb, "%s ", msu_str_data(head_label));
+        msu_str_builder_printf(sb, "%s\n", msu_str_data(head_label));
 
         parsenode_t *cond = list_of_parsenodes_get(node->children, 0);
-        const char *insr;
-        {
-            if (cond->children->len > 0) {
-                parsenode_t *lhs = list_of_parsenodes_get(cond->children, 0);
-                zt_compile_impl(lhs, ctx, sb);
-            }
+        parsenode_t *lhs = list_of_parsenodes_get(cond->children, 0);
+        parsenode_t *rhs = list_of_parsenodes_get(cond->children, 1);
 
-            if (msu_str_eqs(cond->token->content, ">=")) {
-                insr = "BRP";
-            } else if (msu_str_eqs(cond->token->content, "=")) {
-                insr = "BRZ";
+        bool lhs_simple = lhs->kind == ZT_VAR;
+        bool rhs_simple = rhs->kind == ZT_VAR || rhs->kind == ZT_INT;
+
+        if (lhs_simple && rhs_simple) {
+            zt_context_ensure_var(ctx, lhs->token->content);
+            msu_str_builder_printf(sb, "LDA %s\n", msu_str_data(lhs->token->content));
+
+            if (rhs->kind == ZT_INT) {
+                const msu_str_t *val = zt_context_ensure_val(ctx, rhs->token);
+                msu_str_builder_printf(sb, "SUB %s\n", msu_str_data(val));
             } else {
-                msu_str_printf("error: invalid op %s", cond->token->content);
+                zt_context_ensure_var(ctx, rhs->token->content);
+                msu_str_builder_printf(sb, "SUB %s\n", msu_str_data(rhs->token->content));
             }
+        } else {
+            const msu_str_t *tmpL = msu_str_printf("$tmp%d", ctx->label_num++);
+            zt_compile_impl(lhs, ctx, sb);
+            msu_str_builder_printf(sb, "STA %s\n", msu_str_data(tmpL));
+            zt_context_ensure_var(ctx, tmpL);
+
+            const msu_str_t *tmpR = msu_str_printf("$tmp%d", ctx->label_num++);
+            zt_compile_impl(rhs, ctx, sb);
+            msu_str_builder_printf(sb, "STA %s\n", msu_str_data(tmpR));
+            zt_context_ensure_var(ctx, tmpR);
+
+            msu_str_builder_printf(sb, "LDA %s\n", msu_str_data(tmpL));
+            msu_str_builder_printf(sb, "SUB %s\n", msu_str_data(tmpR));
+        }
+
+        const char *insr = NULL;
+        if (msu_str_eqs(cond->token->content, ">=")) {
+            insr = "BRP";
+        } else if (msu_str_eqs(cond->token->content, "=")) {
+            insr = "BRZ";
+        } else {
+            msu_str_printf("error: invalid op %s", cond->token->content);
         }
 
         msu_str_builder_printf(sb, "%s %s\n", insr, msu_str_data(body_label));
-        msu_str_builder_printf(sb, "BRA %s\n", msu_str_data(end_label)); // if !(var < 0) goto end
-        msu_str_builder_printf(sb, "%s ADD 0\n", msu_str_data(body_label));
+        msu_str_builder_printf(sb, "BRA %s\n", msu_str_data(end_label));
+
+        // --- FIXED THESE TWO LINES ---
+        msu_str_builder_printf(sb, "%s\nADD 0\n", msu_str_data(body_label));
         parsenode_t *block = list_of_parsenodes_get(node->children, 1);
         zt_compile_impl(block, ctx, sb);
-        msu_str_builder_printf(sb, "BRA %s\n", msu_str_data(head_label)); // return to condition
-        msu_str_builder_printf(sb, "%s ADD 0\n", msu_str_data(end_label));
+        msu_str_builder_printf(sb, "BRA %s\n", msu_str_data(head_label));
+        msu_str_builder_printf(sb, "%s\nADD 0\n", msu_str_data(end_label));
+    } else if (node->kind == ZT_INT) {
+        const msu_str_t *label = zt_context_ensure_val(ctx, node->token);
+        msu_str_builder_printf(sb, "LDA %s\n", msu_str_data(label));
     } else if (node->kind == ZT_WRITE) {
         parsenode_t *value = list_of_parsenodes_get(node->children, 0);
         zt_compile_impl(value, ctx, sb);
         msu_str_builder_pushs(sb, "OUT\n");
-    } else if (node->kind == ZT_OP) {
-        // TODO implement in class
-    } else if (node->kind == ZT_INT) {
-        // TODO implement in class
     } else if (node->kind == ZT_VAR) {
-        // TODO implement
+        zt_context_ensure_var(ctx, node->token->content);
+        msu_str_builder_printf(sb, "LDA %s\n", msu_str_data(node->token->content));
+    } else if (node->kind == ZT_OP) {
+        parsenode_t *lhs = list_of_parsenodes_get(node->children, 0);
+        parsenode_t *rhs = list_of_parsenodes_get(node->children, 1);
+
+        if (lhs->kind == ZT_VAR && rhs->kind == ZT_VAR) {
+            zt_context_ensure_var(ctx, lhs->token->content);
+            zt_context_ensure_var(ctx, rhs->token->content);
+            msu_str_builder_printf(sb, "LDA %s\n", msu_str_data(lhs->token->content));
+            if (msu_str_eqs(node->token->content, "+")) {
+                msu_str_builder_printf(sb, "ADD %s\n", msu_str_data(rhs->token->content));
+            } else if (msu_str_eqs(node->token->content, "-")) {
+                msu_str_builder_printf(sb, "SUB %s\n", msu_str_data(rhs->token->content));
+            }
+        } else {
+            zt_compile_impl(lhs, ctx, sb);
+            const msu_str_t *tmp = msu_str_printf("$tmp%d", ctx->label_num++);
+            msu_str_builder_printf(sb, "STA %s\n", msu_str_data(tmp));
+            zt_context_ensure_var(ctx, tmp);
+            zt_compile_impl(rhs, ctx, sb);
+            if (msu_str_eqs(node->token->content, "+")) {
+                msu_str_builder_printf(sb, "ADD %s\n", msu_str_data(tmp));
+            } else if (msu_str_eqs(node->token->content, "-")) {
+                msu_str_builder_printf(sb, "SUB %s\n", msu_str_data(tmp));
+            }
+        }
     } else if (node->kind == ZT_READ) {
         msu_str_builder_printf(sb, "INP\n");
     } else {
         printf("Unknown parse element type: %d\n", node->kind);
     }
 }
-
 const msu_str_t *zt_compile(parsenode_t *node) {
     msu_str_builder_t sb = msu_str_builder_new();
     zt_context_t ctx = {
